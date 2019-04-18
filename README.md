@@ -24,7 +24,7 @@ A user can have several unstaking requests at the same time, each request is ind
 
 ## Extra features in MYKEY
 
-If Smart Contract of dapps implement action's in this sample, they will get build-in features and better experiences in MYKEY App. 
+If Smart Contract of dapps use the tranfer protocol in this sample, they will get build-in features and better experiences in MYKEY App. 
 
 Their dapps can use upcoming MYKEY SDK to build safe and solid dapps with basic token economy mechanism rapidly.
 
