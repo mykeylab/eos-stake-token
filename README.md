@@ -1,7 +1,7 @@
 # eos-stake-token
 
 SPECIFICATION:
-Bihu KEY token contract is based on the official 'eosio.token' contract, with some additional functions.
+KEY token contract is based on the official 'eosio.token' contract, with some additional functions.
 1. stake/unstake
    Staking tokens takes effect immediately. Unstaking tokens takes effect with delay. Unstaking triggers a deferred transaction, the deferred time is configurable.
    In case the deferred transaction does not execute when time is due, anyone can manually execute it by calling 'refund' method.
@@ -14,7 +14,7 @@ Bihu KEY token contract is based on the official 'eosio.token' contract, with so
 
 
 说明文档
-bihu key的合约基于eos官方的token合约开发，增加了抵押等功能。
+key的token合约基于eos官方的token合约开发，增加了抵押等功能。
 1. 抵押/解锁代币。
    抵押代币立刻生效。解锁代币需要一段时间，解锁交易会触发一笔延时交易来执行解锁动作。解锁所需要的时间可以配置。
    如果解锁的延时交易没有执行，则任何用户都可以通过refund接口来手动触发。
