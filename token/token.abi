@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Wed Apr 10 11:03:28 2019",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Apr 23 15:43:06 2019",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -9,6 +9,20 @@
                 {
                     "name": "balance",
                     "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "addblacklist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -213,6 +227,20 @@
             ]
         },
         {
+            "name": "rmblacklist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "setdelay",
             "base": "",
             "fields": [
@@ -259,6 +287,16 @@
             ]
         },
         {
+            "name": "stake_blacklist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "transfer",
             "base": "",
             "fields": [
@@ -297,6 +335,11 @@
     ],
     "types": [],
     "actions": [
+        {
+            "name": "addblacklist",
+            "type": "addblacklist",
+            "ricardian_contract": ""
+        },
         {
             "name": "autorefund",
             "type": "autorefund",
@@ -343,6 +386,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "rmblacklist",
+            "type": "rmblacklist",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setdelay",
             "type": "setdelay",
             "ricardian_contract": ""
@@ -372,6 +420,13 @@
         {
             "name": "accounts",
             "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "blacklist",
+            "type": "stake_blacklist",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

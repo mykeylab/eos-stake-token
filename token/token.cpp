@@ -19,13 +19,13 @@ void token::create( name   issuer,
       require_auth( _self );
 
     auto sym = maximum_supply.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( maximum_supply.is_valid(), "invalid supply");
-    eosio_assert( maximum_supply.amount > 0, "max-supply must be positive");
+    check( sym.is_valid(), "invalid symbol name" );
+    check( maximum_supply.is_valid(), "invalid supply");
+    check( maximum_supply.amount > 0, "max-supply must be positive");
 
     stats statstable( _self, sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
-    eosio_assert( existing == statstable.end(), "token with symbol already exists" );
+    check( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace( _self, [&]( auto& s ) {
        s.supply.symbol = maximum_supply.symbol;
@@ -41,20 +41,20 @@ void token::create( name   issuer,
 void token::issue( name to, asset quantity, string memo )
 {
     auto sym = quantity.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
+    check( sym.is_valid(), "invalid symbol name" );
+    check( memo.size() <= 256, "memo has more than 256 bytes" );
 
     stats statstable( _self, sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
-    eosio_assert( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
+    check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
     const auto& st = *existing;
 
     require_auth( st.issuer );
-    eosio_assert( quantity.is_valid(), "invalid quantity" );
-    eosio_assert( quantity.amount > 0, "must issue positive quantity" );
+    check( quantity.is_valid(), "invalid quantity" );
+    check( quantity.amount > 0, "must issue positive quantity" );
 
-    eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-    eosio_assert( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
+    check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+    check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply += quantity;
@@ -72,19 +72,19 @@ void token::issue( name to, asset quantity, string memo )
 void token::retire( asset quantity, string memo )
 {
     auto sym = quantity.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
+    check( sym.is_valid(), "invalid symbol name" );
+    check( memo.size() <= 256, "memo has more than 256 bytes" );
 
     stats statstable( _self, sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
-    eosio_assert( existing != statstable.end(), "token with symbol does not exist" );
+    check( existing != statstable.end(), "token with symbol does not exist" );
     const auto& st = *existing;
 
     require_auth( st.issuer );
-    eosio_assert( quantity.is_valid(), "invalid quantity" );
-    eosio_assert( quantity.amount > 0, "must retire positive quantity" );
+    check( quantity.is_valid(), "invalid quantity" );
+    check( quantity.amount > 0, "must retire positive quantity" );
 
-    eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+    check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
 
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;
@@ -94,20 +94,19 @@ void token::retire( asset quantity, string memo )
 }
 
 /* 
- * 4 transfer modes in stake-token
+ * 3 transfer modes in stake-token
  * 1) transfer from liquid to liquid as usual,
  * 2) transfer from liquid to staked, received token is staked
- * 3) transfer from staked to staked, send staked token and received token is staked 
- * 4) transfer from staked to liquid, send staked token and received token is liquid, fee is required.
+ * 3) transfer from staked to liquid, send staked token and received token is liquid, fee is required.
  */
 void token::transfer( name    from,
                       name    to,
                       asset   quantity,
                       string  memo )
 {
-   eosio_assert( from != to, "cannot transfer to self" );
+   check( from != to, "cannot transfer to self" );
    require_auth( from );
-   eosio_assert( is_account( to ), "to account does not exist");
+   check( is_account( to ), "to account does not exist");
    auto sym = quantity.symbol.code();
    stats statstable( _self, sym.raw() );
    const auto& st = statstable.get( sym.raw() );
@@ -115,10 +114,10 @@ void token::transfer( name    from,
    require_recipient( from );
    require_recipient( to );
 
-   eosio_assert( quantity.is_valid(), "invalid quantity" );
-   eosio_assert( quantity.amount > 0, "must transfer positive quantity" );
-   eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-   eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must transfer positive quantity" );
+   check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+   check( memo.size() <= 256, "memo has more than 256 bytes" );
 
    auto payer = has_auth( to ) ? to : from;
 
@@ -129,9 +128,8 @@ void token::transfer( name    from,
       string sub_memo = memo.substr(separator_pos + 1);
 
       if (main_memo == "Transfer" && sub_memo == "FromLiquidToStaked") {
+         check_blacklist(sym.raw(), to);
          return transfer_liquid_to_staked(from, to, quantity);
-      } else if (main_memo == "Transfer" && sub_memo == "FromStakedToStaked") {
-         return transfer_staked_to_staked(from, to, quantity);
       } else if (main_memo == "Transfer" && sub_memo == "FromStakedToLiquid") {
          return transfer_staked_to_liquid(from, to, quantity);
       }
@@ -172,8 +170,9 @@ void token::transfer_staked_to_liquid(name from, name to, asset quantity)
    const auto& sym_code_raw = quantity.symbol.code().raw();
    stats statstable( _self, sym_code_raw);
    const auto& st = statstable.get( sym_code_raw , "symbol does not exist");
-   const auto& transfer_fee = quantity * st.transfer_fee_ratio / 100;
-   eosio_assert( lock_from.locked_balance >= ( quantity + unstaking_amount + transfer_fee), "transfer_staked_to_liquid overdrawn balance" );
+   auto transfer_fee = quantity * st.transfer_fee_ratio / 100;
+   transfer_fee.amount = (transfer_fee.amount < 1) ? 1 : transfer_fee.amount;
+   check( lock_from.locked_balance >= ( quantity + unstaking_amount + transfer_fee), "transfer_staked_to_liquid overdrawn balance" );
 
    sub_balance( from, quantity, true);
    add_balance( to, quantity, from );
@@ -183,17 +182,13 @@ void token::transfer_staked_to_liquid(name from, name to, asset quantity)
       a.locked_balance -= (quantity + transfer_fee);
    });
 
-   if(transfer_fee.amount > 0) {
-      action act = action(
-         permission_level{ from, name("active")},
-         _self,
-         name("transfer"),
-         std::make_tuple(from, st.fee_receiver, transfer_fee, std::string("Transfer:FromStakedToLiquid fee"))
-      );
-      act.send();
-   }
-
-   return;
+   action act = action(
+      permission_level{ from, name("active")},
+      _self,
+      name("transfer"),
+      std::make_tuple(from, st.fee_receiver, transfer_fee, std::string("Transfer:FromStakedToLiquid fee"))
+   );
+   act.send();
 }
 
 void token::transfer_staked_to_staked(name from, name to, asset quantity)
@@ -208,10 +203,10 @@ void token::transfer_staked_to_staked(name from, name to, asset quantity)
    //ongoing unstaking
    refunds_table refunds_tbl( _self, from.value );
    uint64_t auto_index = refunds_tbl.available_primary_key();
-   eosio_assert( auto_index >= 0, "auto_index invalid " );
+   check( auto_index >= 0, "auto_index invalid " );
 
    asset unstaking_amount = collect_refund(from, quantity.symbol, auto_index);
-   eosio_assert( lock_from.locked_balance >= ( quantity + unstaking_amount), "transfer_staked_to_staked overdrawn balance" );
+   check( lock_from.locked_balance >= ( quantity + unstaking_amount), "transfer_staked_to_staked overdrawn balance" );
 
    //subtract from's locked balance
    lock_from_acnts.modify( lock_from, from, [&]( auto& a ) {
@@ -230,8 +225,8 @@ void token::transfer_staked_to_staked(name from, name to, asset quantity)
 
 void token::inline_stake(name owner, asset quantity, name rampayer)
 {
-   eosio_assert( quantity.is_valid(), "invalid quantity" );
-   eosio_assert( quantity.amount > 0, "must stake positive quantity" );
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must stake positive quantity" );
 
    accounts from_acnts( _self, owner.value );
 
@@ -240,7 +235,7 @@ void token::inline_stake(name owner, asset quantity, name rampayer)
    lock_accounts lock_from_acnts( _self, owner.value );
    const auto& lock_from = lock_from_acnts.get( quantity.symbol.code().raw(), "no lock balance object found" );
 
-   eosio_assert( from.balance >= (lock_from.locked_balance + quantity), "overdrawn balance for stake action" );
+   check( from.balance >= (lock_from.locked_balance + quantity), "overdrawn balance for stake action" );
 
    lock_from_acnts.modify( lock_from, rampayer, [&]( auto& a ) {
       a.locked_balance += quantity;
@@ -263,15 +258,15 @@ void token::unstake(name owner, asset quantity)
 {
    require_auth( owner );
 
-   eosio_assert( quantity.is_valid(), "invalid quantity" );
-   eosio_assert( quantity.amount > 0, "must unstake positive quantity" );
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must unstake positive quantity" );
 
    lock_accounts lock_from_acnts( _self, owner.value );
 
    const auto& sym_code_raw = quantity.symbol.code().raw();
 
    const auto& lock_from = lock_from_acnts.get( sym_code_raw, "no balance object found" );
-   eosio_assert( lock_from.locked_balance >= quantity, "overdrawn locked balance" );
+   check( lock_from.locked_balance >= quantity, "overdrawn locked balance" );
    // lock_from_acnts.modify( lock_from, owner, [&]( auto& a ) {
    //    a.locked_balance = a.locked_balance;
    // });   
@@ -285,7 +280,7 @@ void token::unstake(name owner, asset quantity)
 
    asset unstaking_amount = collect_refund(owner, quantity.symbol, auto_index);
 
-   eosio_assert( lock_from.locked_balance >= (unstaking_amount + quantity), "overdrawn locked balance" );
+   check( lock_from.locked_balance >= (unstaking_amount + quantity), "overdrawn locked balance" );
 
    refunds_tbl.emplace( owner, [&]( refund_request& r ) {
       r.index = auto_index;
@@ -324,15 +319,15 @@ void token::inline_refund(name owner, name rampayer, uint64_t index)
 {
    refunds_table refunds_tbl( _self, owner.value );
    auto req = refunds_tbl.find( index );
-   eosio_assert( req != refunds_tbl.end(), "refund request not found" );
-   eosio_assert( req->available_time <= current_time_point(), "refund is not available yet" );
+   check( req != refunds_tbl.end(), "refund request not found" );
+   check( req->available_time <= current_time_point(), "refund is not available yet" );
 
    asset quantity = req->amount;
 
    lock_accounts lock_from_acnts( _self, owner.value );
 
    const auto& lock_from = lock_from_acnts.get( quantity.symbol.code().raw(), "no balance object found" );
-   eosio_assert( lock_from.locked_balance >= quantity, "overdrawn locked balance" );
+   check( lock_from.locked_balance >= quantity, "overdrawn locked balance" );
 
    lock_from_acnts.modify( lock_from, rampayer, [&]( auto& a ) {
       a.locked_balance -= quantity;
@@ -362,7 +357,7 @@ void token::cancelunstake(name owner, uint64_t index)
 
    refunds_table refunds_tbl( _self, owner.value );
    auto req = refunds_tbl.find( index );
-   eosio_assert( req != refunds_tbl.end(), "refund request not found" );
+   check( req != refunds_tbl.end(), "refund request not found" );
    refunds_tbl.erase( req );
 }
 
@@ -375,9 +370,9 @@ void token::sub_balance( name owner, asset value , bool use_locked_balance)
    const auto& lock_from = lock_from_acnts.get( value.symbol.code().raw(), "no balance object found in lock_accounts" );
 
    if(use_locked_balance) {
-      eosio_assert( lock_from.locked_balance >= value, "sub_balance: lock_from.locked_balanc overdrawn balance" );
+      check( lock_from.locked_balance >= value, "sub_balance: lock_from.locked_balanc overdrawn balance" );
    }else {
-      eosio_assert( from.balance >= ( value + lock_from.locked_balance), "sub_balance: from.balance overdrawn balance" );
+      check( from.balance >= ( value + lock_from.locked_balance), "sub_balance: from.balance overdrawn balance" );
    }
 
    from_acnts.modify( from, owner, [&]( auto& a ) {
@@ -418,7 +413,7 @@ void token::open( name owner, const symbol& symbol, name ram_payer )
 
    stats statstable( _self, sym_code_raw );
    const auto& st = statstable.get( sym_code_raw, "symbol does not exist" );
-   eosio_assert( st.supply.symbol == symbol, "symbol precision mismatch" );
+   check( st.supply.symbol == symbol, "symbol precision mismatch" );
 
    accounts acnts( _self, owner.value );
    auto it = acnts.find( sym_code_raw );
@@ -442,14 +437,14 @@ void token::close( name owner, const symbol& symbol )
    require_auth( owner );
    accounts acnts( _self, owner.value );
    auto it = acnts.find( symbol.code().raw() );
-   eosio_assert( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
-   eosio_assert( it->balance.amount == 0, "Cannot close because the balance is not zero." );
+   check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
+   check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
    acnts.erase( it );
 
    lock_accounts lock_acnts( _self, owner.value );
    auto lock_it = lock_acnts.find( symbol.code().raw() );
-   eosio_assert( lock_it != lock_acnts.end(), "Lock Balance row already deleted or never existed. Action won't have any effect." );
-   eosio_assert( lock_it->locked_balance.amount == 0, "Cannot close because the balance is not zero." );
+   check( lock_it != lock_acnts.end(), "Lock Balance row already deleted or never existed. Action won't have any effect." );
+   check( lock_it->locked_balance.amount == 0, "Cannot close because the balance is not zero." );
    lock_acnts.erase( lock_it );
 
 }
@@ -460,7 +455,7 @@ void token::setdelay(const symbol& symbol, uint64_t t)
 
    stats statstable( _self, sym_code_raw );
    const auto& st = statstable.get( sym_code_raw, "symbol does not exist." );
-   eosio_assert( st.supply.symbol == symbol, "symbol precision mismatch." );
+   check( st.supply.symbol == symbol, "symbol precision mismatch." );
 
    require_auth( st.issuer );
    statstable.modify( st, same_payer, [&]( auto& s ) {
@@ -474,11 +469,11 @@ void token::settransfee(const symbol& symbol, uint64_t r, name receiver)
 
    stats statstable( _self, sym_code_raw );
    const auto& st = statstable.get( sym_code_raw, "symbol does not exist." );
-   eosio_assert( st.supply.symbol == symbol, "symbol precision mismatch." );
+   check( st.supply.symbol == symbol, "symbol precision mismatch." );
 
    require_auth( st.issuer );
    
-   eosio_assert( r >=0 && r <= 100, "transfer fee is invalid.");
+   check( r >=0 && r <= 100, "transfer fee is invalid.");
 
    statstable.modify( st, same_payer, [&]( auto& s ) {
       s.transfer_fee_ratio = r;
@@ -486,4 +481,47 @@ void token::settransfee(const symbol& symbol, uint64_t r, name receiver)
    });
 }
 
-EOSIO_DISPATCH( token, (create)(issue)(transfer)(open)(close)(retire)(stake)(unstake)(cancelunstake)(refund)(autorefund)(setdelay)(settransfee)(autostake))
+void token::addblacklist(const symbol& symbol, name account)
+{
+   auto sym_code_raw = symbol.code().raw();
+
+   stats statstable( _self, sym_code_raw );
+   const auto& st = statstable.get( sym_code_raw, "symbol does not exist." );
+   check( st.supply.symbol == symbol, "symbol precision mismatch." );
+
+   require_auth( st.issuer );
+
+   blacklist_table blacklist_tbl( _self, sym_code_raw );
+   auto item = blacklist_tbl.find( account.value );
+   if (item == blacklist_tbl.end()) {
+      blacklist_tbl.emplace( st.issuer, [&](auto& i) {
+         i.account = account;
+      });
+   } 
+}
+
+void token::rmblacklist(const symbol& symbol, name account)
+{
+   auto sym_code_raw = symbol.code().raw();
+
+   stats statstable( _self, sym_code_raw );
+   const auto& st = statstable.get( sym_code_raw, "symbol does not exist." );
+   check( st.supply.symbol == symbol, "symbol precision mismatch." );
+
+   require_auth( st.issuer );
+
+   blacklist_table blacklist_tbl( _self, sym_code_raw );
+   auto item = blacklist_tbl.find( account.value );
+   if (item != blacklist_tbl.end()) {
+      blacklist_tbl.erase(item);
+   }
+}
+
+void token::check_blacklist(uint64_t sym_code_raw, name account) 
+{
+   blacklist_table blacklist_tbl( _self, sym_code_raw );
+   auto item = blacklist_tbl.find( account.value );
+   check(item == blacklist_tbl.end(), "account is blacklisted.");
+}
+
+EOSIO_DISPATCH( token, (create)(issue)(transfer)(open)(close)(retire)(stake)(unstake)(cancelunstake)(refund)(autorefund)(setdelay)(settransfee)(autostake)(addblacklist)(rmblacklist))

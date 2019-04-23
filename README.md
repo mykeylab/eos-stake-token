@@ -14,12 +14,11 @@ Stake token contract is based on the official 'eosio.token' contract, with some 
 ### 2. Deferred unstaking requests are stored in table temporarily. 
 A user can have several unstaking requests at the same time, each request is independent with a unique self-incrementing index as primary key. Unstaking requests can be cancelled during deferred period.
 
-### 3. There are 4 types of token transfer, distinguished by memo.
+### 3. There are 3 types of token transfer, distinguished by memo.
 
    - **Common transfer**: Only for liquid tokens;
-   - **Liquid -> Staked**: Transfer `FROM`'s liquid token to `TO`, automatically become staked, memo format: `"Transfer:FromLiquidToStaked"`;
-   - **Staked -> Staked**: Transfer `FROM`'s staked token to `TO`, still staked, memo format: `"Transfer:FromStakedToStaked"`;
-   - **Staked -> Liquid**: Transfer `FROM`'s staked token to `TO`, automatically become liquid. In this case transfer fee is required, fee ratio and fee recipient is configurable. memo format: `"Transfer:FromStakedToLiquid"`.
+   - **Liquid -> Staked**: Transfer `FROM`'s liquid token to `TO`, automatically become staked. If `TO` is in stake blacklist, this transfer will fail, token issuer can call 'addblacklist'/'rmblacklist' to manage blacklist. Transfer memo format: `"Transfer:FromLiquidToStaked"`;
+   - **Staked -> Liquid**: Transfer `FROM`'s staked token to `TO`, automatically become liquid. In this case transfer fee is required, fee ratio and fee recipient is configurable. Transfer memo format: `"Transfer:FromStakedToLiquid"`.
 
 
 ## Extra features in MYKEY

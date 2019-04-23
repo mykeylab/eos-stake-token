@@ -35,6 +35,12 @@ class [[eosio::contract]] token : public contract {
       void settransfee(const symbol& symbol, uint64_t r, name receiver);
 
       [[eosio::action]]
+      void addblacklist(const symbol& symbol, name account);
+
+      [[eosio::action]]
+      void rmblacklist(const symbol& symbol, name account);
+
+      [[eosio::action]]
       void transfer( name    from,
                      name    to,
                      asset   quantity,
@@ -114,10 +120,19 @@ class [[eosio::contract]] token : public contract {
          EOSLIB_SERIALIZE( refund_request, (index)(owner)(available_time)(amount) )
       };
 
+      // accounts who cannot be 'TO' in transfer type of 'FromLiquidToStaked'
+      // scope: sym_code_raw
+      struct [[eosio::table]] stake_blacklist {
+         name account;
+
+         uint64_t  primary_key()const { return account.value; }
+      };
+
       typedef eosio::multi_index< name("accounts"), account > accounts;
       typedef eosio::multi_index< name("lockaccounts"), lock_account > lock_accounts;
       typedef eosio::multi_index< name("stat"), currency_stats > stats;
       typedef eosio::multi_index< name("refunds"), refund_request >  refunds_table;
+      typedef eosio::multi_index< name("blacklist"), stake_blacklist > blacklist_table;
 
       void sub_balance( name owner, asset value , bool use_locked_balance = false);
       void add_balance( name owner, asset value, name ram_payer );
@@ -129,5 +144,6 @@ class [[eosio::contract]] token : public contract {
       void transfer_staked_to_staked(name from, name to, asset quantity);
       void transfer_staked_to_liquid(name from, name to, asset quantity);
       asset collect_refund(name owner, const symbol& symbol, uint64_t auto_index);
+      void check_blacklist(uint64_t sym_code_raw, name account);
 };
 
