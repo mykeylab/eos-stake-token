@@ -38,15 +38,15 @@ more...
  
 Special thanks to the community contributors help to audit and verify it.
  
-**EOS Authority**
+[**EOS Authority**](https://github.com/eosauthority)
  
-**HKEOS** 
+[**HKEOS**](https://github.com/HKEOS)
  
-**EOS 42**
+[**EOS 42**](https://github.com/eos42)
  
-**EOS Sweden**
+[**EOS Sweden**](https://github.com/eosswedenorg)
  
-**EOS Cannon**
+[**EOS Cannon**](https://github.com/eoscannon)
 
 
  
