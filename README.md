@@ -41,12 +41,12 @@ Special thanks to the community contributors help to audit and verify it.
 [**EOS Authority**](https://github.com/eosauthority)
  
 [**HKEOS**](https://github.com/HKEOS)
+
+[**EOS Cannon**](https://github.com/eoscannon)
  
 [**EOS 42**](https://github.com/eos42)
  
-[**EOS Sweden**](https://github.com/eosswedenorg)
- 
-[**EOS Cannon**](https://github.com/eoscannon)
+
 
 
  
