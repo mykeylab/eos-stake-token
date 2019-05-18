@@ -46,6 +46,7 @@ Special thanks to the community contributors help to audit and verify it.
  
 [**EOS 42**](https://github.com/eos42)
  
+[**Whaleex**](https://whaleex.com)
 
 
 
